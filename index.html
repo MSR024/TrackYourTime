@@ -350,7 +350,7 @@ body.home .btn.primary{background:var(--theme-accent,var(--accent));border-color
   <button role="tab" data-tab="home" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
   <button role="tab" data-tab="track" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Day</button>
   <button role="tab" data-tab="week" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2"/></svg>Week</button>
-  <button role="tab" data-tab="settings" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Lists</button>
+  <button role="tab" data-tab="settings" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Setup</button>
 </div></nav>
 <div id="overlay"></div>
 
@@ -570,7 +570,7 @@ function render(){
   if(!S.ready)return;
   const isToday=S.date===todayKey();const d=parseKey(S.date);
   const onLists=S.tab==="settings";["prev","next","today"].forEach(id=>document.getElementById(id).style.visibility=onLists?"hidden":"");
-  if(onLists){document.getElementById("dLabel").textContent="Lists";document.getElementById("dSub").textContent="Categories and settings";document.getElementById("datebtn").disabled=true}
+  if(onLists){document.getElementById("dLabel").textContent="Setup";document.getElementById("dSub").textContent="Categories and settings";document.getElementById("datebtn").disabled=true}
   else document.getElementById("datebtn").disabled=false;
   if(onLists){}else if(S.tab==="week"){const ws=weekStart(S.date),we=addDays(ws,6);const inWeek=todayKey()>=ws&&todayKey()<=we;
     document.getElementById("dLabel").textContent=inWeek?"This week":"Week of "+parseKey(ws).toLocaleDateString(undefined,{month:"short",day:"numeric"});
@@ -652,7 +652,7 @@ function renderHome(){
   const st2=stats(S.date);const span=isToday?nowSlot()+1:96;const open=Math.max(0,span-Object.keys(st2.s).filter(i=>+i<span).length);
   const prev=s[f.from-1];
   let strip="";for(let i=0;i<96;i++){const v=s[i];strip+=`<i style="background:${v?(v.auto?hatch(catColor(v.c)):catColor(v.c)):"transparent"};${i>=f.from&&i<f.to?"box-shadow:inset 0 -4px 0 var(--ink)":""}"></i>`}
-  main.innerHTML=`<div class="homelinks"><span class="l"><button data-tab-go="track">Day view</button><button data-tab-go="week">Week view</button></span><span class="r"><button data-tab-go="settings">Lists</button></span></div>
+  main.innerHTML=`<div class="homelinks"><span class="l"><button data-tab-go="track">Day</button><button data-tab-go="week">Week</button></span><span class="r"><button data-tab-go="settings">Setup</button></span></div>
   <div class="hero">
     <h1 class="logo" aria-label="Track Your TIME"><small>Track Your</small><b><span>T</span><span>I</span><span>M</span><span>E</span></b></h1><div class="tagline">${esc(theme.tag)}</div>
     <div class="daynav"><button data-day="-1" aria-label="Previous day">‹</button><span>${label}</span><button data-day="1" aria-label="Next day">›</button>${isToday?"":`<button data-day="0" style="font-size:13px">Today</button>`}</div>
@@ -841,7 +841,7 @@ function blockIndicatorsMulti(list,note){
     const detail=isSleep?`${hrs(slept)} slept`:awake?`${hrs(prod)} productive${waste?` · ${hrs(waste)} wasted`:""}`:started?"Nothing logged":list.length>1?"Not started":"Later today";
     return `<div class="ind ${lvl}" title="${esc(b.name)} ${range}: ${esc(detail)}"><svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true"><circle cx="24" cy="24" r="${r}" class="trk"/>${fr>0?`<circle cx="24" cy="24" r="${r}" class="val" stroke-dasharray="${c*fr} ${c}" transform="rotate(-90 24 24)"/>`:""}<text x="24" y="28" text-anchor="middle">${pct==null?"–":pct}</text></svg>
       <b>${esc(b.name)}</b><span class="rg mono">${range}</span><span class="lv">${word}</span></div>`}).join("")}</div>
-    <div class="muted indnote">${note?note+" ":""}Score = productive share of the awake time you logged in each block, based on each activity's setting in Lists. Sleep shows how much of 10 PM–5 AM you slept, counting only the part of the night that has passed.</div>`;
+    <div class="muted indnote">${note?note+" ":""}Score = productive share of the awake time you logged in each block, based on each activity's setting in Setup. Sleep shows how much of 10 PM–5 AM you slept, counting only the part of the night that has passed.</div>`;
 }
 /* Shared by Day and Week: productive activities, then time by category (collapsible) */
 function summaryHTML(maps,scope,emptyText){
@@ -855,7 +855,7 @@ function summaryHTML(maps,scope,emptyText){
     <div class="card prodcard" style="margin-top:8px">${rows.length?rows.map(([key,n])=>{const [c,an]=key.split("\u0001");
       return `<div class="prow" style="--c:${catColor(c)}"><div class="trow"><span class="tn"><span class="dot"></span><b>${esc(an)}</b><span class="muted pc">${esc(c)}</span></span><span class="tv mono">${hrs(n)}</span></div><div class="track"><div class="fill" style="width:${n/pmax*100}%"></div></div></div>`}).join("")
       :`<div class="muted">No productive time logged ${emptyText}.</div>`}
-    <div class="muted pnote">Activities that count as Productive. Change what counts in Lists, using the dropdown next to each activity.</div></div>`;
+    <div class="muted pnote">Activities that count as Productive. Change what counts in Setup, using the dropdown next to each activity.</div></div>`;
   h+=`<div class="row" style="justify-content:space-between;margin-top:18px"><h2 style="margin:0">Time by category</h2><span class="muted" style="font-size:12px">Tap + to see activities</span></div><div class="card" style="margin-top:8px">`;
   if(!cats.length)h+=`<div class="muted">Nothing logged ${emptyText}.</div>`;
   else h+=`<div class="tree">${cats.map(([c,d])=>{const acts=Object.entries(d.acts).sort((x,y)=>y[1]-x[1]);const open=openSet.has(c);
@@ -956,12 +956,6 @@ function renderSettings(){
   h+=`<div class="card"><form class="row" id="addcat"><input class="txt" id="newcat" placeholder="New category name" autocomplete="off"><button class="btn primary" type="submit">Add category</button></form>
     <div class="muted" style="font-size:12.5px;margin-top:8px">Renaming also updates entries you already logged. Mark each activity as Productive or TBD (to be decided). Only Productive activities appear in the Productive activities summaries.</div></div>`;
   const nDays=Object.keys(S.days).filter(k=>Object.keys(S.days[k].slots).length).length;
-  h+=`<h2>Excel</h2><div class="card stack">
-    <div class="muted" style="font-size:13px">Exports use the same columns as your worksheet: Day, Date, Start Time, End Time, Total Time, Activity, Category, plus the day block.</div>
-    <div class="row" style="flex-wrap:wrap"><button class="btn" data-act="exportday">Export this day</button><button class="btn" data-act="exportall">Export all (${nDays} days)</button></div>
-    <label class="btn ghost" style="text-align:center">Import an Excel or CSV sheet<input type="file" id="imp" accept=".xlsx,.xls,.csv" style="display:none"></label>
-    <div class="muted" style="font-size:12.5px">Importing fills in the 15-minute blocks for every date in the file and adds any new activities and categories.</div></div>`;
-  h+=`<h2>Saving</h2><div class="card stack"><div class="muted" style="font-size:13px">Test version: your entries are saved in this browser on this device only. To keep them safe, add the app to your home screen and use <b>Export all</b> now and then for a backup. Moving to another device: export here, then import there.</div></div>`;
   main.innerHTML=h;
 }
 
