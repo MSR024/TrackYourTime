@@ -285,6 +285,7 @@ body.home{background:radial-gradient(120% 60% at 50% 0%,color-mix(in srgb,var(--
 body.home main{background:transparent}
 body.home .btn.primary{background:var(--theme-accent,var(--accent));border-color:var(--theme-accent,var(--accent));color:#fff}
 .theme-name{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);opacity:.8}
+.testcard{display:flex;flex-direction:column;gap:8px;border:1px dashed var(--warn)}
 .sleepcard{display:flex;flex-direction:column;gap:8px;border-left:4px solid var(--sleep)}
 .sleepcard .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:0 0 4px 2px}
 .sleepcard select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-size:15px}
@@ -833,7 +834,7 @@ function blockIndicatorsMulti(list,note){
     const detail=isSleep?`${hrs(slept)} slept`:awake?`${hrs(prod)} productive${waste?` · ${hrs(waste)} wasted`:""}`:started?"Nothing logged":list.length>1?"Not started":"Later today";
     return `<div class="ind ${lvl}" title="${esc(b.name)} ${range}: ${esc(detail)}"><svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true"><circle cx="24" cy="24" r="${r}" class="trk"/>${fr>0?`<circle cx="24" cy="24" r="${r}" class="val" stroke-dasharray="${c*fr} ${c}" transform="rotate(-90 24 24)"/>`:""}<text x="24" y="28" text-anchor="middle">${pct==null?"–":pct}</text></svg>
       <b>${esc(b.name)}</b><span class="rg mono">${range}</span><span class="lv">${word}</span></div>`}).join("")}</div>
-    <div class="muted indnote">${note?note+" ":""}Score = productive share of the awake time you logged in each block, based on each category's "Counts as" setting in Lists. Sleep shows how much of 10 PM–5 AM you slept, counting only the part of the night that has passed.</div>`;
+    <div class="muted indnote">${note?note+" ":""}Score = productive share of the awake time you logged in each block, based on each activity's setting in Lists. Sleep shows how much of 10 PM–5 AM you slept, counting only the part of the night that has passed.</div>`;
 }
 function renderDay(){
   const k=S.date,a=agg(k),isToday=k===todayKey(),span=isToday?nowSlot()+1:96,open=Math.max(0,span-a.total);
@@ -925,8 +926,41 @@ function orphans(){const out={};Object.entries(S.days).forEach(([k,d])=>Object.v
     if(!cat(v.c)||!S.settings.activities.some(a=>a.cat===v.c&&a.name===v.a)){const key=v.c+"\u0001"+v.a;(out[key]||(out[key]={c:v.c,a:v.a,n:0,days:new Set()})).n++;out[key].days.add(k)}}));
   return Object.values(out).sort((x,y)=>y.n-x.n)}
 function fixOrphan(c,a,to){Object.keys(S.days).forEach(k=>{const sl=S.days[k].slots;let ch=false;Object.keys(sl).forEach(i=>{const v=sl[i];if(v.c===c&&v.a===a){if(to)sl[i]={a:to.a,c:to.c};else delete sl[i];ch=true}});if(ch)saveDay(k)})}
+/* ---------- TEMPORARY testing tools (remove before real use) ---------- */
+function sampleWeek(){
+  const st=S.settings,tk=todayKey(),ns=nowSlot();const has=n=>st.activities.find(a=>a.name===n);
+  const pick=(...names)=>{for(const n of names){const a=has(n);if(a)return a}return null};
+  const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  const touched=[];
+  for(let j=6;j>=0;j--){const k=addDays(tk,-j);const dow=parseKey(k).getDay();const weekend=dow===0||dow===6;
+    const d=S.days[k]||(S.days[k]={slots:{}});let ch=false;
+    const put=(f,t,act)=>{if(!act)return;for(let i=f;i<t&&i<96;i++){if(k===tk&&i>ns)break;if(d.slots[i])continue;d.slots[i]={a:act.name,c:act.cat};ch=true}};
+    const w=rnd(0,2); // a little variety each day
+    put(16,18,pick("Freshup"));
+    put(18,22-w,pick(["Walking","Running","Swimming"][rnd(0,2)],"Walking"));
+    put(22-w,24,pick("Tea"));
+    if(weekend){
+      put(24,30,pick("Kids Activities"));put(30,32,pick("Breakfast"));put(32,40,pick(["Cleaning","Garage","Backyard","Vacuuming"][rnd(0,3)]));
+      put(40,44,pick("Swimming","Walking"));put(44,48,pick("Lunch"));put(48,56,pick("Time with Wife"));put(56,58,pick("Timewaster"));
+      put(58,64,pick("Kids Activities"));put(64,66,pick("Clothes Washing"));
+    }else{
+      put(24,26,pick("Kids Activities"));put(26,28,pick("Breakfast"));put(28,28+w,pick("Timewaster"));put(28+w,32,pick("To Office"));
+      put(32,38,pick("Project Calls"));put(38,40,pick("Follow up Meetings"));put(40,44,pick("Deliverables"));put(44,48,pick("Lunch"));
+      put(48,54,pick("Deliverables"));put(54,56,pick("Learnings"));put(56,58,pick("Catchup"));put(58,60+w,pick("Timewaster"));put(60+w,64,pick("From Office"));
+    }
+    put(64,68,pick("Kids Activities"));put(68,72,pick("Dinner"));put(72,78,pick("Time with Wife"));put(78,80,pick("Dishwasher Unload"));
+    put(80,84,pick("Task Planning"));put(84,88,pick("Calls with Family"));put(88,92,pick("Time Tracker"));
+    if(ch)touched.push(k);
+  }
+  touched.forEach(saveDay);return touched.length;
+}
+function resetDays(keys){keys.forEach(k=>{if(S.days[k]){delete S.days[k];saveDay(k)}})}
 function renderSettings(){
   const st=S.settings;let h=noteHTML();
+  h+=`<div class="card testcard"><div class="row" style="justify-content:space-between"><b>Testing tools</b><span class="pill">Temporary</span></div>
+    <div class="muted" style="font-size:12.5px">For trying out Day and Week views. These will be removed before real use.</div>
+    ${S.testConfirm?`<div class="confirm">${{sample:"Fill the last 7 days with sample entries? Windows you already logged are kept.",today:"Delete all of today's entries?",week:"Delete every entry from this week (Monday to Sunday)?"}[S.testConfirm]}<div class="row" style="margin-top:8px"><button class="btn" data-act="testcancel">Cancel</button><button class="btn ${S.testConfirm==="sample"?"primary":"danger"}" data-act="testgo">${S.testConfirm==="sample"?"Load sample week":"Delete"}</button></div></div>`
+      :`<div class="row" style="flex-wrap:wrap"><button class="btn" data-act="testask" data-test="sample">Load sample week</button><button class="btn" data-act="testask" data-test="today">Reset today</button><button class="btn" data-act="testask" data-test="week">Reset this week</button></div>`}</div>`;
   const sc=sleepCfg();const qopts=sel=>{let o="";for(let i=0;i<96;i++)o+=`<option value="${i}" ${i===sel?"selected":""}>${fmt(i)}</option>`;return o};
   h+=`<div class="card sleepcard"><div class="row" style="justify-content:space-between"><b>☾ Usual sleep</b><label class="switch"><input type="checkbox" id="sleep-on" ${sc.on?"checked":""}><span>${sc.on?"On":"Off"}</span></label></div>
     <div class="muted" style="font-size:13px">Empty windows in this time count as Sleep automatically, so you don't log them every night. On a rough night, log what you did and it replaces the sleep for those windows.</div>
@@ -1102,6 +1136,13 @@ document.addEventListener("click",e=>{
     case "canceldel":S.confirmDel=null;render();break;
     case "confirmdel":{const st=S.settings;if(st.categories.length<=1){toast("Keep at least one category.");break}const c=st.categories[+t.dataset.cat];st.activities=st.activities.filter(a=>a.cat!==c.name);st.categories.splice(+t.dataset.cat,1);S.confirmDel=null;if(S.form.cat===c.name)S.form.cat="";saveSettings();render();toast(`Deleted ${c.name}`);break}
     case "logit":homeLog();break;
+    case "testask":S.testConfirm=t.dataset.test;render();break;
+    case "testcancel":S.testConfirm=null;render();break;
+    case "testgo":{const what=S.testConfirm;S.testConfirm=null;
+      if(what==="sample"){const n=sampleWeek();render();toast(n?`Sample entries added to ${n} day${n>1?"s":""}`:"Nothing to add; those windows are already logged")}
+      else if(what==="today"){resetDays([todayKey()]);render();toast("Today's entries deleted")}
+      else if(what==="week"){const ws=weekStart(todayKey());const ks=[];for(let i=0;i<7;i++)ks.push(addDays(ws,i));resetDays(ks);render();toast("This week's entries deleted")}
+      break}
     case "lognight":{const c=sleepCfg();const y=addDays(todayKey(),-1);if(c.from>c.to){S.date=y}else S.date=todayKey();S.form.date=S.date;S.form.from=c.from;S.form.newCat=false;S.form.newAct=false;
       const sc=S.settings.categories.find(x=>!catIsSleep(x.name));if(sc&&catIsSleep(S.form.cat)){S.form.cat=sc.name;S.form.act=""}render();toast("Pick each window you were awake and log it");break}
     case "hidenight":S.nightDismissed=todayKey();render();break;
