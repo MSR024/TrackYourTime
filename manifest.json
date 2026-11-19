@@ -1,0 +1,14 @@
+{
+  "name": "Track Your TIME",
+  "short_name": "Track Your TIME",
+  "description": "Log your day in 15-minute windows and see where your time goes.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f4",
+  "theme_color": "#f3f5f4",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
