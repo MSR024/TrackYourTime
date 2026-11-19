@@ -659,7 +659,7 @@ function renderHome(){
     ${noteHTML()}${nightCard(isToday)}
     <form class="form" id="logform">
       <div class="field"><label for="f-from">Time</label><select id="f-from">${timeOpts}</select></div>
-      ${missed.length?`<div class="missed">${missed.length} missed · <button type="button" data-act="prevmissed">Earlier missed</button><button type="button" data-act="nextmissed">Next missed</button>${isToday&&f.from!==ns?`<button type="button" data-act="gonow">Now</button>`:""}</div>`:(isToday&&f.from!==ns?`<div class="missed"><button type="button" data-act="gonow">Back to now</button></div>`:"")}
+      ${missed.length?`<div class="missed">${missed.length} missed · ${missed.includes(f.from)?`<span class="muted">logging ${fmt(f.from)}</span>`:`<button type="button" data-act="firstmissed">Log missed time</button>`}</div>`:""}
       <div class="field"><div class="fieldhd"><label for="${f.newCat?"f-newcat":"f-cat"}">Category</label><button type="button" class="addnew" data-act="${f.newCat?"cancelnewcat":"newcat"}">${f.newCat?"Cancel":"+ New"}</button></div>
         ${f.newCat?`<input class="txt" id="f-newcat" placeholder="New category name" value="${esc(f.newCatName||"")}" autocomplete="off">`
           :`<select id="f-cat">${st.categories.map(c=>`<option value="${esc(c.name)}" ${c.name===f.cat?"selected":""}>${esc(c.name)}</option>`).join("")}</select>`}</div>
@@ -1095,6 +1095,7 @@ document.addEventListener("click",e=>{
       let i=f.from+dir,found=-1;while(i>=0&&i<lim){if(!sl[i]){found=i;break}i+=dir}
       if(found<0){for(let j=dir>0?0:lim-1;j>=0&&j<lim;j+=dir)if(!sl[j]){found=j;break}}
       if(found>=0){f.from=found;render()}break}
+    case "firstmissed":{const sl=slotsOf(S.date),isT=S.date===todayKey(),lim=isT?nowSlot():96;for(let i=0;i<lim;i++)if(!sl[i]){S.form.from=i;break}prefillFromSlot();render();break}
     case "gonow":S.form.from=nowSlot();prefillFromSlot();render();break;
     case "canceldel":S.confirmDel=null;render();break;
     case "confirmdel":{const st=S.settings;if(st.categories.length<=1){toast("Keep at least one category.");break}const c=st.categories[+t.dataset.cat];st.activities=st.activities.filter(a=>a.cat!==c.name);st.categories.splice(+t.dataset.cat,1);S.confirmDel=null;if(S.form.cat===c.name)S.form.cat="";saveSettings();render();toast(`Deleted ${c.name}`);break}
