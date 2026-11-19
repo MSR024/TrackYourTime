@@ -135,6 +135,8 @@ select,.txt{padding:10px;border-radius:10px;border:1px solid var(--line);backgro
 .strip i:first-child{border-radius:6px 0 0 6px}.strip i:last-child{border-radius:0 6px 6px 0}
 .nowmark{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--ink);border-radius:2px}
 .nowmark::after{content:"";position:absolute;top:-4px;left:-3px;width:8px;height:8px;border-radius:50%;background:var(--ink)}
+.axis span{width:0;display:flex;justify-content:center;white-space:nowrap}
+.axis span:first-child{justify-content:flex-start}.axis span:last-child{justify-content:flex-end}
 .axis{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px}
 .bars{display:flex;flex-direction:column;gap:9px}
 .bar .top{display:flex;justify-content:space-between;font-size:13.5px;gap:8px}
@@ -646,7 +648,7 @@ function renderHome(){
     </form>
     ${s[f.from]&&s[f.from].auto?`<div class="editing">${fmt(f.from)} counts as sleep (your usual sleep time). Log something only if you were awake.</div>`:s[f.from]&&!(cat(s[f.from].c)&&st.activities.some(a=>a.cat===s[f.from].c&&a.name===s[f.from].a))?`<div class="editing">This time has an old entry that isn't in your lists any more. Pick a category and activity to replace it, or <button type="button" data-tab-go="settings">tidy up all old entries</button>.</div>`:""}
     <div class="btns"><button class="btn primary" data-act="logit">${s[f.from]&&!s[f.from].auto?"Change entry":"Log it"}</button></div>
-    <div class="today"><div class="strip">${strip}${nowMark(S.date)}</div><div class="axis"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>12 AM</span></div>
+    <div class="today"><div class="strip">${strip}${nowMark(S.date)}</div><div class="axis"><span>12a</span><span>3a</span><span>6a</span><span>9a</span><span>12p</span><span>3p</span><span>6p</span><span>9p</span><span>12a</span></div>
       <div class="line">${(()=>{const fut=S.date>todayKey();const ahead=fut?96-st2.logged:Math.max(0,96-span-Object.keys(st2.s).filter(i=>+i>=span).length);const op=fut?0:open;
         return `<b>${hrs(st2.logged)}</b> logged${op?` · <span style="color:var(--warn)">${hrs(op)} not logged</span>`:""}${ahead?` · ${hrs(ahead)} still ahead`:""} <span class="sum">= 24h</span>`})()}</div></div>
   </div>`;
@@ -777,7 +779,7 @@ function renderSummary(){
     <div class="muted" style="font-size:12.5px;margin-top:10px">${hrs(st.logged)} logged${unlogged?` · <span style="color:var(--warn)">${hrs(unlogged)} not logged${isToday?" so far":""}</span>`:""}</div></div>`;
   // strip
   let strip="";for(let i=0;i<96;i++){const v=st.s[i];strip+=`<i style="background:${v?catColor(v.c):"transparent"}" title="${range(i)}${v?" · "+esc(v.a):""}"></i>`}
-  h+=`<h2>Timeline</h2><div class="card"><div class="strip">${strip}${nowMark(k)}</div><div class="axis"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>12 AM</span></div></div>`;
+  h+=`<h2>Timeline</h2><div class="card"><div class="strip">${strip}${nowMark(k)}</div><div class="axis"><span>12a</span><span>3a</span><span>6a</span><span>9a</span><span>12p</span><span>3p</span><span>6p</span><span>9p</span><span>12a</span></div></div>`;
   // blocks
   h+=`<h2>By block</h2><div class="card"><div class="list">${BLOCKS.map(b=>{let lg=0,pr=0,aw=0,ws=0;const top={};for(let i=b.from;i<b.to;i++){const v=st.s[i];if(v){lg++;const ty=typeOf(v);if(ty!=="sleep")aw++;if(ty==="productive")pr++;if(ty==="waste")ws++;top[v.c]=(top[v.c]||0)+1}}
     const t=Object.entries(top).sort((x,y)=>y[1]-x[1])[0];
@@ -798,7 +800,7 @@ function agg(k){const s=slotsOf(k);const by={};let total=0;
   Object.values(s).forEach(v=>{total++;const c=by[v.c]||(by[v.c]={n:0,acts:{}});c.n++;c.acts[v.a]=(c.acts[v.a]||0)+1});return {total,by,s}}
 function catOrder(names){const order=S.settings.categories.map(c=>c.name);return [...names].sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?999:ia)-(ib<0?999:ib)})}
 function pct(n,d){return d?Math.round(n/d*100):0}
-function stripHTML(s,k){let h="";for(let i=0;i<96;i++){const v=s[i];h+=`<i style="background:${v?(v.auto?hatch(catColor(v.c)):catColor(v.c)):"transparent"}" title="${range(i)}${v?" · "+esc(v.c)+" › "+esc(v.a):""}"></i>`}return `<div class="strip">${h}${nowMark(k)}</div><div class="axis"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>12 AM</span></div>`}
+function stripHTML(s,k){let h="";for(let i=0;i<96;i++){const v=s[i];h+=`<i style="background:${v?(v.auto?hatch(catColor(v.c)):catColor(v.c)):"transparent"}" title="${range(i)}${v?" · "+esc(v.c)+" › "+esc(v.a):""}"></i>`}return `<div class="strip">${h}${nowMark(k)}</div><div class="axis"><span>12a</span><span>3a</span><span>6a</span><span>9a</span><span>12p</span><span>3p</span><span>6p</span><span>9p</span><span>12a</span></div>`}
 /* Productivity indicator per time block (interim rule: share of logged awake time in Productive categories).
    The two Sleep blocks (12–5 AM and 10 PM–12 AM) are shown together as one Sleep indicator. */
 function mergedBlocks(){const out=[];BLOCKS.forEach(b=>{let m=out.find(x=>x.name===b.name);if(!m){m={name:b.name,ranges:[]};out.push(m)}m.ranges.push([b.from,b.to])});
