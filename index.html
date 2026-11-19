@@ -836,75 +836,37 @@ function blockIndicatorsMulti(list,note){
       <b>${esc(b.name)}</b><span class="rg mono">${range}</span><span class="lv">${word}</span></div>`}).join("")}</div>
     <div class="muted indnote">${note?note+" ":""}Score = productive share of the awake time you logged in each block, based on each activity's setting in Lists. Sleep shows how much of 10 PM–5 AM you slept, counting only the part of the night that has passed.</div>`;
 }
-function renderDay(){
-  const k=S.date,a=agg(k),isToday=k===todayKey(),span=isToday?nowSlot()+1:96,open=Math.max(0,span-a.total);
-  const cats=Object.entries(a.by).sort((x,y)=>y[1].n-x[1].n);const max=cats[0]?.[1].n||1;
-  let h=noteHTML();
-  // Day view: productive activities, then time per category
-  {const prod={};Object.values(a.s).forEach(v=>{if(typeOf(v)!=="productive")return;const key=v.c+"\u0001"+v.a;prod[key]=(prod[key]||0)+1});
-   const rows=Object.entries(prod).sort((x,y)=>y[1]-x[1]);const tot=rows.reduce((t,r)=>t+r[1],0);const pmax=rows[0]?.[1]||1;
-   h+=`<div class="row" style="justify-content:space-between;margin-top:4px"><h2 style="margin:0">Productive activities</h2><span class="mono" style="font-weight:700;color:var(--good)">${hrs(tot)}</span></div>
-     <div class="card prodcard" style="margin-top:8px">${rows.length?rows.map(([key,n])=>{const [c,an]=key.split("\u0001");
-       return `<div class="prow" style="--c:${catColor(c)}"><div class="trow"><span class="tn"><span class="dot"></span><b>${esc(an)}</b><span class="muted pc">${esc(c)}</span></span><span class="tv mono">${hrs(n)}</span></div><div class="track"><div class="fill" style="width:${n/pmax*100}%"></div></div></div>`}).join("")
-       :`<div class="muted">No productive time logged ${k===todayKey()?"yet today":"on this day"}.</div>`}
-     <div class="muted pnote">Activities that count as Productive. Change what counts in Lists, using the dropdown next to each activity.</div></div>`;}
+/* Shared by Day and Week: productive activities, then time by category (collapsible) */
+function summaryHTML(maps,scope,emptyText){
+  const prod={},by={};let total=0;
+  maps.forEach(m=>Object.values(m).forEach(v=>{total++;const c=by[v.c]||(by[v.c]={n:0,acts:{}});c.n++;c.acts[v.a]=(c.acts[v.a]||0)+1;
+    if(typeOf(v)==="productive"){const key=v.c+"\u0001"+v.a;prod[key]=(prod[key]||0)+1}}));
+  const rows=Object.entries(prod).sort((x,y)=>y[1]-x[1]);const tot=rows.reduce((t,r)=>t+r[1],0);const pmax=rows[0]?.[1]||1;
+  const cats=Object.entries(by).sort((x,y)=>y[1].n-x[1].n);const max=cats[0]?.[1].n||1;
+  const openSet=(scope==="week"?S.weekOpen:S.dayOpen)||new Set();
+  let h=`<div class="row" style="justify-content:space-between;margin-top:4px"><h2 style="margin:0">Productive activities</h2><span class="mono" style="font-weight:700;color:var(--good)">${hrs(tot)}</span></div>
+    <div class="card prodcard" style="margin-top:8px">${rows.length?rows.map(([key,n])=>{const [c,an]=key.split("\u0001");
+      return `<div class="prow" style="--c:${catColor(c)}"><div class="trow"><span class="tn"><span class="dot"></span><b>${esc(an)}</b><span class="muted pc">${esc(c)}</span></span><span class="tv mono">${hrs(n)}</span></div><div class="track"><div class="fill" style="width:${n/pmax*100}%"></div></div></div>`}).join("")
+      :`<div class="muted">No productive time logged ${emptyText}.</div>`}
+    <div class="muted pnote">Activities that count as Productive. Change what counts in Lists, using the dropdown next to each activity.</div></div>`;
   h+=`<div class="row" style="justify-content:space-between;margin-top:18px"><h2 style="margin:0">Time by category</h2><span class="muted" style="font-size:12px">Tap + to see activities</span></div><div class="card" style="margin-top:8px">`;
-  if(!cats.length)h+=`<div class="muted">Nothing logged on this day yet.</div>`;
-  else h+=`<div class="tree">${cats.map(([c,d])=>{const acts=Object.entries(d.acts).sort((x,y)=>y[1]-x[1]);
-      const open=S.dayOpen&&S.dayOpen.has(c);
-      return `<div class="tc" style="--c:${catColor(c)}"><div class="trow cat" data-daycat="${esc(c)}"><span class="tn"><button class="expbtn" data-dayexp="${esc(c)}" aria-expanded="${open}" aria-label="${open?"Hide":"Show"} activities in ${esc(c)}">${open?"−":"+"}</button><span class="dot"></span>${esc(c)}</span><span class="tv mono">${hrs(d.n)}<small>${pct(d.n,a.total)}%</small></span></div>
+  if(!cats.length)h+=`<div class="muted">Nothing logged ${emptyText}.</div>`;
+  else h+=`<div class="tree">${cats.map(([c,d])=>{const acts=Object.entries(d.acts).sort((x,y)=>y[1]-x[1]);const open=openSet.has(c);
+      return `<div class="tc" style="--c:${catColor(c)}"><div class="trow cat" data-daycat="${esc(c)}" data-scope="${scope}"><span class="tn"><button class="expbtn" data-dayexp="${esc(c)}" data-scope="${scope}" aria-expanded="${open}" aria-label="${open?"Hide":"Show"} activities in ${esc(c)}">${open?"−":"+"}</button><span class="dot"></span>${esc(c)}</span><span class="tv mono">${hrs(d.n)}<small>${pct(d.n,total)}%</small></span></div>
         <div class="track"><div class="fill" style="width:${d.n/max*100}%"></div></div>
         <div class="tacts" ${open?"":"hidden"}>${acts.map(([an,n])=>`<div class="trow"><span class="tn">${esc(an)}</span><span class="tv mono">${hrs(n)}</span></div><div class="track thin"><div class="fill" style="width:${n/max*100}%"></div></div>`).join("")}</div></div>`}).join("")}</div>`;
-  h+=`</div>`;
-  main.innerHTML=h;
+  return h+`</div>`;
 }
-
+function toggleOpen(scope,c){const key=scope==="week"?"weekOpen":"dayOpen";S[key]=S[key]||new Set();S[key].has(c)?S[key].delete(c):S[key].add(c);render()}
+function renderDay(){
+  const k=S.date;main.innerHTML=noteHTML()+summaryHTML([slotsOf(k)],"day",k===todayKey()?"yet today":"on this day");
+}
 /* Week view: Monday to Sunday containing the selected date */
 function weekStart(k){const d=parseKey(k);const dow=(d.getDay()+6)%7;return addDays(k,-dow)}
 function renderWeek(){
   const ws=weekStart(S.date);const days=[];for(let j=0;j<7;j++)days.push(addDays(ws,j));
-  const tk=todayKey();const cutoff=days.filter(k=>k<=tk).length||7; // current week: compare like-for-like days only
-  const prevDays=days.slice(0,cutoff).map(k=>addDays(k,-7));
-  const A=days.map(agg),P=prevDays.map(agg);
-  const total=A.reduce((t,a)=>t+a.total,0),ptotal=P.reduce((t,a)=>t+a.total,0);
-  const used=catOrder([...new Set(A.flatMap(a=>Object.keys(a.by)))]);
-  const daysLogged=A.filter(a=>a.total).length;
-  const dlt=(n,p)=>{if(!p&&!n)return `<span class="muted">–</span>`;const d=n-p;if(!d)return `<span class="muted">same</span>`;return `<span class="${d>0?"up":"down"}">${d>0?"▲":"▼"} ${hrs(Math.abs(d))}</span>`};
-  let h=noteHTML();
-  h+=`<div class="card"><div class="tiles3">
-    <div class="tile"><div class="k">Logged this week</div><div class="v">${hrs(total)}</div></div>
-    <div class="tile"><div class="k">Daily average</div><div class="v">${hrs(daysLogged?Math.round(total/daysLogged):0)}</div></div>
-    <div class="tile"><div class="k">${cutoff<7?`vs last ${parseKey(days[0]).toLocaleDateString(undefined,{weekday:"short"})}–${parseKey(days[cutoff-1]).toLocaleDateString(undefined,{weekday:"short"})}`:"vs last week"}</div><div class="v" style="font-size:15px">${dlt(total,ptotal)}</div></div></div></div>`;
-  h+=`<h2>Time blocks this week</h2><div class="card">${blockIndicatorsMulti(days.map((k,di)=>[A[di].s,k]),"Combined across the week so far.")}</div>`;
-  // trend: stacked bars per day by category
-  const maxDay=Math.max(4,...A.map(a=>a.total/4));const top=Math.ceil(maxDay/4)*4;const ticks=[0,top/4,top/2,top*3/4,top];
-  h+=`<h2>Daily trend</h2><div class="card"><div class="muted" style="font-size:12.5px;margin-bottom:6px">Hours logged each day by category. Tap a bar for details, or a day name to open it.</div>
-    <div class="chart" id="wchart"><div class="yax">${ticks.slice().reverse().map(t=>`<span>${t}h</span>`).join("")}</div>
-      <div class="plot">${ticks.map(t=>`<div class="gl" style="bottom:${t/top*100}%"></div>`).join("")}
-        <div class="bars">${A.map((a,di)=>{const segs=catOrder(Object.keys(a.by)).map(c=>`<i style="height:${a.by[c].n/4/top*100}%;background:${catColor(c)}"></i>`).reverse().join("");
-          return `<div class="bcol ${days[di]===tk?"cur":""}" data-wday="${di}" tabindex="0" aria-label="${parseKey(days[di]).toLocaleDateString(undefined,{weekday:"long"})} ${hrs(a.total)}"><span class="btot mono">${a.total?(Math.round(a.total/4*10)/10)+"h":""}</span><div class="stack">${segs}</div></div>`}).join("")}</div></div></div>
-    <div class="xax">${days.map(k=>`<button data-openday="${k}" class="${k===tk?"cur":""}">${parseKey(k).toLocaleDateString(undefined,{weekday:"short"})}<small>${parseKey(k).getDate()}</small></button>`).join("")}</div>
-    ${used.length?`<div class="legend">${used.map(c=>`<span><span class="dot" style="--c:${catColor(c)}"></span>${esc(c)}</span>`).join("")}</div>`:`<div class="muted" style="margin-top:8px">Nothing logged this week yet.</div>`}
-    <div class="tip" id="wtip" hidden></div></div>`;
-  // category table: hours per day + total + change
-  if(used.length){
-    const rowsHTML=used.map(c=>{const per=A.map(a=>a.by[c]?.n||0);const tot=per.reduce((x,y)=>x+y,0);const ptot=P.reduce((t,a)=>t+(a.by[c]?.n||0),0);const mx=Math.max(1,...per);
-      const open=S.openCats&&S.openCats.has(c);
-      const acts={};A.forEach(a=>{const d=a.by[c];if(d)Object.entries(d.acts).forEach(([an,n])=>acts[an]=(acts[an]||0)+n)});
-      const actRows=open?Object.entries(acts).sort((x,y)=>y[1]-x[1]).map(([an,n])=>{const pa=A.map(a=>a.by[c]?.acts[an]||0);const pp=P.reduce((t,a)=>t+(a.by[c]?.acts[an]||0),0);
-        return `<tr class="sub"><td class="cn">${esc(an)}</td>${pa.map(v=>`<td class="cell7"><span class="mini" style="--c:${catColor(c)};height:${v/mx*100}%"></span></td>`).join("")}<td class="mono r">${hrs(n)}</td><td class="mono r chg">${dlt(n,pp)}</td></tr>`}).join(""):"";
-      return `<tr class="catrow" data-togglecat="${esc(c)}"><td class="cn"><span class="caret">${open?"▾":"▸"}</span><span class="dot" style="--c:${catColor(c)}"></span>${esc(c)}</td>${per.map(v=>`<td class="cell7" title="${hrs(v)}"><span class="mini" style="--c:${catColor(c)};height:${v/mx*100}%"></span></td>`).join("")}<td class="mono r"><b>${hrs(tot)}</b></td><td class="mono r chg">${dlt(tot,ptot)}</td></tr>${actRows}`}).join("");
-    h+=`<h2>Categories this week</h2><div class="card" style="padding:10px 8px"><div class="tablewrap"><table class="wt"><thead><tr><th class="cn">Category</th>${days.map(k=>`<th class="cell7">${parseKey(k).toLocaleDateString(undefined,{weekday:"narrow"})}</th>`).join("")}<th class="r">Total</th><th class="r">Change</th></tr></thead><tbody>${rowsHTML}</tbody></table></div>
-      <div class="muted" style="font-size:12px;margin:8px 4px 0">Tap a category to see its activities. Small bars show each day's hours.${cutoff<7?` "Change" compares with the same days (${parseKey(days[0]).toLocaleDateString(undefined,{weekday:"short"})}–${parseKey(days[cutoff-1]).toLocaleDateString(undefined,{weekday:"short"})}) of last week.`:""}</div></div>`;
-  }
-  main.innerHTML=h;
-  const chart=document.getElementById("wchart"),tip=document.getElementById("wtip");
-  const show=el=>{const di=+el.dataset.wday,a=A[di];if(!a.total){tip.hidden=true;return}
-    tip.innerHTML=`<b>${parseKey(days[di]).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"})}</b><span class="mono">${hrs(a.total)}</span>`+Object.entries(a.by).sort((x,y)=>y[1].n-x[1].n).map(([c,d])=>`<div><span class="dot" style="--c:${catColor(c)}"></span>${esc(c)}<span class="mono">${hrs(d.n)}</span></div>`).join("");
-    tip.hidden=false;const r=el.getBoundingClientRect(),pr=tip.parentElement.getBoundingClientRect();let x=r.left-pr.left+r.width/2-tip.offsetWidth/2;x=Math.max(4,Math.min(x,pr.width-tip.offsetWidth-4));tip.style.left=x+"px";tip.style.top=(r.top-pr.top+8)+"px";
-    chart.querySelectorAll(".bcol").forEach(b=>b.classList.toggle("on",b===el))};
-  chart.querySelectorAll(".bcol").forEach(el=>{el.addEventListener("pointerenter",e=>{if(e.pointerType==="mouse")show(el)});el.addEventListener("click",()=>show(el));el.addEventListener("focus",()=>show(el))});
-  chart.addEventListener("pointerleave",e=>{if(e.pointerType==="mouse"){tip.hidden=true;chart.querySelectorAll(".bcol").forEach(b=>b.classList.remove("on"))}});
+  const tk=todayKey();const inWeek=tk>=ws&&tk<=days[6];
+  main.innerHTML=noteHTML()+summaryHTML(days.filter(k=>k<=tk).map(slotsOf),"week",inWeek?"yet this week":"this week");
 }
 function verdict(p){return p>=70?"Very productive day":p>=50?"Solid day":p>=30?"Room to improve":"Mostly unproductive"}
 
@@ -1111,7 +1073,7 @@ document.addEventListener("click",e=>{
   const od2=e.target.closest("[data-orphdel]");
   if(od2){const o=orphans()[+od2.dataset.orphdel];if(o){fixOrphan(o.c,o.a,null);render();toast(`Removed ${hrs(o.n)} of ${o.c} › ${o.a}`)}return}
   const dx=e.target.closest("[data-dayexp]");
-  if(dx){S.dayOpen=S.dayOpen||new Set();const c=dx.dataset.dayexp;S.dayOpen.has(c)?S.dayOpen.delete(c):S.dayOpen.add(c);render();return}
+  if(dx){toggleOpen(dx.dataset.scope,dx.dataset.dayexp);return}
   const tc=e.target.closest("[data-togglecat]");
   if(tc){S.openCats=S.openCats||new Set();const c=tc.dataset.togglecat;S.openCats.has(c)?S.openCats.delete(c):S.openCats.add(c);render();return}
   const od=e.target.closest("[data-openday]");
@@ -1163,7 +1125,7 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("dblclick",e=>{const r=e.target.closest("[data-daycat]");if(!r||e.target.closest("[data-dayexp]"))return;
-  S.dayOpen=S.dayOpen||new Set();const c=r.dataset.daycat;S.dayOpen.has(c)?S.dayOpen.delete(c):S.dayOpen.add(c);render()});
+  toggleOpen(r.dataset.scope,r.dataset.daycat)});
 document.addEventListener("change",e=>{
   const t=e.target;
   if(t.id==="sleep-on"||t.id==="sleep-from"||t.id==="sleep-to"){const c=Object.assign({},sleepCfg());
