@@ -358,8 +358,9 @@ body.home .btn.primary{background:var(--theme-accent,var(--accent));border-color
 "use strict";
 /* ---------- Defaults from your Excel worksheet (Week1) ---------- */
 const PALETTE=["#2a78d6","#eb6834","#1baf7a","#eda100","#e87ba4","#008300","#6250d6","#e34948"];
-const TYPES={productive:{label:"Productive",color:"var(--good)"},essential:{label:"Essential",color:"var(--warn)"},sleep:{label:"Sleep",color:"var(--sleep)"},waste:{label:"Wasted",color:"var(--bad)"}};
-const SETTINGS_V=5;
+const TYPES={productive:{label:"Productive",color:"var(--good)"},tbd:{label:"TBD",color:"var(--muted)"}};
+const LEGACY_TYPES={essential:{label:"Essential",color:"var(--warn)"},sleep:{label:"Sleep",color:"var(--sleep)"},waste:{label:"Wasted",color:"var(--bad)"}};
+const SETTINGS_V=6;
 const OLD_COLORS={"Sleep": "#5b6bb5", "Freshup": "#e0a100", "Exercise": "#2f9e6e", "Food": "#d9822b", "Office Travel": "#6b7280", "FTB Work": "#0f6b5c", "Family Time": "#c94f9b", "Organizing": "#3b82c4", "Home Chores": "#7c6f2e"};
 const NEW_COLORS={"FTB Work": "#2a78d6", "Family Time": "#eb6834", "Exercise": "#1baf7a", "Food": "#eda100", "Home Chores": "#e87ba4", "Organizing": "#008300", "Office Travel": "#6250d6", "Freshup": "#e34948", "Sleep": "#8a8f98"};
 /* Light-mode series hex -> its dark-mode step (same hue, stepped for the dark surface) */
@@ -378,17 +379,17 @@ const DEFAULT_SETTINGS={
     {name:"Home Chores",color:"#e87ba4"}
   ],
   activities:[
-    {name:"Sleep",cat:"Sleep",type:"sleep"},
-    {name:"Freshup",cat:"Freshup",type:"essential"},
-    {name:"Walking",cat:"Exercise",type:"productive"},{name:"Running",cat:"Exercise",type:"productive"},{name:"Swimming",cat:"Exercise",type:"productive"},
-    {name:"Breakfast",cat:"Food",type:"essential"},{name:"Lunch",cat:"Food",type:"essential"},{name:"Dinner",cat:"Food",type:"essential"},{name:"Tea",cat:"Food",type:"essential"},{name:"Drinks",cat:"Food",type:"essential"},
-    {name:"To Office",cat:"Office Travel",type:"essential"},{name:"From Office",cat:"Office Travel",type:"essential"},
-    {name:"Follow up Meetings",cat:"FTB Work",type:"productive"},{name:"Learnings",cat:"FTB Work",type:"productive"},{name:"Project Calls",cat:"FTB Work",type:"productive"},
-    {name:"Deliverables",cat:"FTB Work",type:"productive"},{name:"Catchup",cat:"FTB Work",type:"productive"},{name:"Timewaster",cat:"FTB Work",type:"waste"},
-    {name:"Kids Activities",cat:"Family Time",type:"productive"},{name:"Time with Wife",cat:"Family Time",type:"productive"},{name:"Calls with Family",cat:"Family Time",type:"productive"},
-    {name:"Time Tracker",cat:"Organizing",type:"productive"},{name:"Task Planning",cat:"Organizing",type:"productive"},
-    {name:"Dishwasher Unload",cat:"Home Chores",type:"productive"},{name:"Clothes Washing",cat:"Home Chores",type:"productive"},{name:"Vacuuming",cat:"Home Chores",type:"productive"},
-    {name:"Cleaning",cat:"Home Chores",type:"productive"},{name:"Garage",cat:"Home Chores",type:"productive"},{name:"Backyard",cat:"Home Chores",type:"productive"}
+    {name:"Sleep",cat:"Sleep",type:"tbd"},
+    {name:"Freshup",cat:"Freshup",type:"tbd"},
+    {name:"Walking",cat:"Exercise",type:"productive"},{name:"Running",cat:"Exercise",type:"tbd"},{name:"Swimming",cat:"Exercise",type:"tbd"},
+    {name:"Breakfast",cat:"Food",type:"tbd"},{name:"Lunch",cat:"Food",type:"tbd"},{name:"Dinner",cat:"Food",type:"tbd"},{name:"Tea",cat:"Food",type:"tbd"},{name:"Drinks",cat:"Food",type:"tbd"},
+    {name:"To Office",cat:"Office Travel",type:"tbd"},{name:"From Office",cat:"Office Travel",type:"tbd"},
+    {name:"Follow up Meetings",cat:"FTB Work",type:"tbd"},{name:"Learnings",cat:"FTB Work",type:"productive"},{name:"Project Calls",cat:"FTB Work",type:"tbd"},
+    {name:"Deliverables",cat:"FTB Work",type:"tbd"},{name:"Catchup",cat:"FTB Work",type:"tbd"},{name:"Timewaster",cat:"FTB Work",type:"tbd"},
+    {name:"Kids Activities",cat:"Family Time",type:"tbd"},{name:"Time with Wife",cat:"Family Time",type:"tbd"},{name:"Calls with Family",cat:"Family Time",type:"tbd"},
+    {name:"Time Tracker",cat:"Organizing",type:"tbd"},{name:"Task Planning",cat:"Organizing",type:"tbd"},
+    {name:"Dishwasher Unload",cat:"Home Chores",type:"tbd"},{name:"Clothes Washing",cat:"Home Chores",type:"tbd"},{name:"Vacuuming",cat:"Home Chores",type:"tbd"},
+    {name:"Cleaning",cat:"Home Chores",type:"tbd"},{name:"Garage",cat:"Home Chores",type:"tbd"},{name:"Backyard",cat:"Home Chores",type:"tbd"}
   ]
 };
 const REMOVED_CATS=["Wakeup","Food Eating","Self Organizing","Home Organizing","Rest","Self Care","USA Groceries","USA Phone Calls","USA Travel","Time Waste"];
@@ -397,11 +398,15 @@ const REMOVED_ACTS=["Wakeup","Brushing","Shaving","Rest Room","Bags Unpack","App
 function migrate(st){
   if(st&&st.v===SETTINGS_V&&(st.categories||[]).length)return {settings:st,changed:false};
   // v3 -> v4: keep every rename and deletion, only move untouched default colors to the validated palette
-  if(st&&(st.v===3||st.v===4)&&(st.categories||[]).length){const out=JSON.parse(JSON.stringify(st));
+  if(st&&(st.v===3||st.v===4)&&(st.categories||[]).length){st=JSON.parse(JSON.stringify(st));const out=st;
     if(out.v===3)out.categories.forEach(c=>{if(OLD_COLORS[c.name]&&c.color===OLD_COLORS[c.name])c.color=NEW_COLORS[c.name]});
     // v5: how time counts lives on each activity only; an activity without its own setting takes its category's old one
     out.activities.forEach(a=>{if(!a.type){const c=out.categories.find(x=>x.name===a.cat);a.type=(c&&c.type)||"essential"}});
-    out.categories.forEach(c=>{delete c.type});out.v=SETTINGS_V;return {settings:out,changed:true}}
+    out.categories.forEach(c=>{delete c.type});out.v=5;}
+  if(st&&(st.v===3||st.v===4||st.v===5)&&(st.categories||[]).length){const out=JSON.parse(JSON.stringify(st));
+    if(out.v<5){out.activities.forEach(a=>{if(!a.type){const c=out.categories.find(x=>x.name===a.cat);a.type=(c&&c.type)||"tbd"}});out.categories.forEach(c=>{delete c.type})}
+    // v6: only Productive and TBD for now
+    out.activities.forEach(a=>{a.type=(a.name==="Learnings"||a.name==="Walking")?"productive":"tbd"});out.v=SETTINGS_V;return {settings:out,changed:true}}
   const out=JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
   if(st){
     (st.categories||[]).forEach(c=>{if(!REMOVED_CATS.includes(c.name)&&!out.categories.some(x=>x.name===c.name))out.categories.push(c)});
@@ -414,7 +419,9 @@ function migrate(st){
 const SLEEP_DEFAULT={on:true,from:92,to:16}; // 11:00 PM to 4:00 AM
 function sleepCfg(){return (S.settings&&S.settings.sleep)||SLEEP_DEFAULT}
 function inSleep(i){const c=sleepCfg();if(!c.on)return false;return c.from>c.to?(i>=c.from||i<c.to):(i>=c.from&&i<c.to)}
-function sleepEntry(){const a=S.settings.activities.find(x=>x.type==="sleep");return a?{c:a.cat,a:a.name,auto:true}:{c:"Sleep",a:"Sleep",auto:true}}
+function sleepAct(){const A=S.settings.activities;return A.find(x=>x.type==="sleep")||A.find(x=>x.name==="Sleep"&&x.cat==="Sleep")||A.find(x=>x.cat==="Sleep")||A.find(x=>x.name==="Sleep")}
+function isSleepEntry(v){const a=sleepAct();return v.auto||(a?v.c===a.cat&&v.a===a.name:v.c==="Sleep")}
+function sleepEntry(){const a=sleepAct();return a?{c:a.cat,a:a.name,auto:true}:{c:"Sleep",a:"Sleep",auto:true}}
 function slotsOf(k){const real=day(k).slots;if(!sleepCfg().on)return real;const tk=todayKey();if(k>tk)return real;
   const ns=nowSlot(),out=Object.assign({},real);let e=null;
   for(let i=0;i<96;i++){if(!out[i]&&inSleep(i)&&(k<tk||i<=ns)){e=e||sleepEntry();out[i]=e}}return out}
@@ -462,9 +469,9 @@ function day(k){return S.days[k]||{slots:{}}}
 function cat(name){return S.settings.categories.find(c=>c.name===name)}
 function isDark(){const t=document.documentElement.dataset.theme;return t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches}
 function catColor(name){const c=(cat(name)?.color||"#8a8f98").toLowerCase();return isDark()&&DARK_STEP[c]?DARK_STEP[c]:c}
-function catIsSleep(name){return S.settings.activities.some(a=>a.cat===name&&a.type==="sleep")}
+function catIsSleep(name){const a=sleepAct();return a?a.cat===name:name==="Sleep"}
 function catType(name){return catIsSleep(name)?"sleep":"productive"} // legacy; categories no longer carry a type
-function typeOf(v){const x=S.settings.activities.find(y=>y.name===v.a&&y.cat===v.c)||S.settings.activities.find(y=>y.name===v.a);return (x&&x.type)||"essential"}
+function typeOf(v){const x=S.settings.activities.find(y=>y.name===v.a&&y.cat===v.c)||S.settings.activities.find(y=>y.name===v.a);return (x&&x.type)||"tbd"}
 function actCat(a){return S.settings.activities.find(x=>x.name.toLowerCase()===a.toLowerCase())?.cat}
 
 /* ---------- Storage: your private claude.ai storage, with this device as backup ---------- */
@@ -669,8 +676,8 @@ function renderHome(){
 }
 /* Picking a logged window loads its category and activity so it can be changed */
 /* Default category for an empty window: what was logged just before it, but never Sleep outside the sleep window */
-function defaultCat(i){const real=day(S.date).slots;for(let j=i-1;j>=0;j--){const v=real[j];if(v&&cat(v.c)){if(typeOf(v)!=="sleep"||inSleep(i))return v.c;break}}
-  const st=S.settings;if(inSleep(i)){const sa=st.activities.find(a=>a.type==="sleep");if(sa)return sa.cat}
+function defaultCat(i){const real=day(S.date).slots;for(let j=i-1;j>=0;j--){const v=real[j];if(v&&cat(v.c)){if(!isSleepEntry(v)||inSleep(i))return v.c;break}}
+  const st=S.settings;if(inSleep(i)){const sa=sleepAct();if(sa)return sa.cat}
   return (st.categories.find(c=>!catIsSleep(c.name))||st.categories[0]).name}
 function prefillFromSlot(){const f=S.form,v=day(S.date).slots[f.from];
   if(!v||v.auto){if(catIsSleep(f.cat)&&!inSleep(f.from)){f.cat=defaultCat(f.from);f.act=""}return}
@@ -680,7 +687,7 @@ function nightCard(isToday){
   const c=sleepCfg();if(!c.on||!isToday||S.nightDismissed===todayKey())return "";
   const ns=nowSlot();if(ns<c.to||ns>=48)return "";
   const y=addDays(todayKey(),-1);let awake=0,total=0;
-  const count=(k,i)=>{total++;const v=day(k).slots[i];if(v&&typeOf(v)!=="sleep")awake++};
+  const count=(k,i)=>{total++;const v=day(k).slots[i];if(v&&!isSleepEntry(v))awake++};
   if(c.from>c.to){for(let i=c.from;i<96;i++)count(y,i);for(let i=0;i<c.to;i++)count(todayKey(),i)}else for(let i=c.from;i<c.to;i++)count(todayKey(),i);
   return `<div class="night"><span class="moon" aria-hidden="true">☾</span><div><b>${awake?`Last night: awake ${hrs(awake)}, slept ${hrs(total-awake)}`:`Last night counted as sleep`}</b><span>Your usual sleep, ${sleepLabel()}</span></div>
     <div class="nbtns"><button type="button" data-act="lognight">${awake?"Review night":"Rough night? Log it"}</button><button type="button" data-act="hidenight" aria-label="Hide">✕</button></div></div>`;
@@ -695,7 +702,7 @@ function homeLog(){
   if(!c||!a)return;
   let changed=false;
   if(!cat(c)){st.categories.push({name:c,color:PALETTE[st.categories.length%PALETTE.length]});changed=true}
-  if(!st.activities.some(x=>x.name===a&&x.cat===c)){st.activities.push({name:a,cat:c,type:"essential"});changed=true}
+  if(!st.activities.some(x=>x.name===a&&x.cat===c)){st.activities.push({name:a,cat:c,type:"tbd"});changed=true}
   if(changed)saveSettings();
   const d=S.days[S.date]||(S.days[S.date]={slots:{}});
   const wasLogged=!!d.slots[f.from];const loggedLast=f.to>=96;
@@ -769,7 +776,7 @@ function renderSelbar(){
 
 /* Summary */
 function stats(k){
-  const s=slotsOf(k);const by={},acts={},types={productive:0,essential:0,sleep:0,waste:0};let logged=0;
+  const s=slotsOf(k);const by={},acts={},types={productive:0,tbd:0,essential:0,sleep:0,waste:0};let logged=0;
   Object.values(s).forEach(v=>{logged++;by[v.c]=(by[v.c]||0)+1;const key=v.a+"\u0001"+v.c;acts[key]=(acts[key]||0)+1;types[typeOf(v)]++});
   const awake=logged-types.sleep;
   const score=awake?Math.round(types.productive/awake*100):null;
@@ -942,12 +949,12 @@ function renderSettings(){
         <button class="x" data-delcat="${ix}" aria-label="Delete category ${esc(c.name)}">🗑</button></div>`;
     if(S.confirmDel===c.name)h+=`<div class="confirm">Delete <b>${esc(c.name)}</b>${acts.length?` and its ${acts.length} activit${acts.length>1?"ies":"y"}`:""}? Entries you already logged stay in your history.<div class="row" style="margin-top:8px"><button class="btn" data-act="canceldel">Cancel</button><button class="btn danger" data-act="confirmdel" data-cat="${ix}">Delete</button></div></div>`;
     h+=`<div class="mgacts">${acts.map(({a,ai})=>`<div class="mgact"><input class="nm" value="${esc(a.name)}" data-renameact="${ai}" aria-label="Activity name" autocomplete="off" enterkeyhint="done">
-        ${typeSel(`data-acttype="${ai}"`,a.type||"essential",false)}
+        ${typeSel(`data-acttype="${ai}"`,TYPES[a.type]?a.type:"tbd",false)}
         <button class="x" data-delact="${ai}" aria-label="Delete ${esc(a.name)}">×</button></div>`).join("")}
       <form class="mgadd" data-addact="${ix}"><input class="nm" placeholder="+ Add activity" aria-label="New activity in ${esc(c.name)}" autocomplete="off" enterkeyhint="done"><button class="btn" type="submit">Add</button></form></div></div>`;
   });
   h+=`<div class="card"><form class="row" id="addcat"><input class="txt" id="newcat" placeholder="New category name" autocomplete="off"><button class="btn primary" type="submit">Add category</button></form>
-    <div class="muted" style="font-size:12.5px;margin-top:8px">Renaming also updates entries you already logged. Each activity has its own setting for how its time counts: Productive, Essential, Wasted or Sleep. Categories are just groups.</div></div>`;
+    <div class="muted" style="font-size:12.5px;margin-top:8px">Renaming also updates entries you already logged. Mark each activity as Productive or TBD (to be decided). Only Productive activities appear in the Productive activities summaries.</div></div>`;
   const nDays=Object.keys(S.days).filter(k=>Object.keys(S.days[k].slots).length).length;
   h+=`<h2>Excel</h2><div class="card stack">
     <div class="muted" style="font-size:13px">Exports use the same columns as your worksheet: Day, Date, Start Time, End Time, Total Time, Activity, Category, plus the day block.</div>
@@ -1150,7 +1157,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList&&
 document.addEventListener("submit",e=>{
   if(e.target.dataset&&e.target.dataset.addact!==undefined){e.preventDefault();const c=S.settings.categories[+e.target.dataset.addact];const inp=e.target.querySelector("input");const n=inp.value.trim();if(!n)return;
     if(S.settings.activities.some(a=>a.cat===c.name&&a.name.toLowerCase()===n.toLowerCase())){toast(`${c.name} already has ${n}.`);return}
-    S.settings.activities.push({name:n,cat:c.name,type:"essential"});saveSettings();render();toast(`Added ${n} to ${c.name}. It counts as Essential; change it with the dropdown next to it.`);
+    S.settings.activities.push({name:n,cat:c.name,type:"tbd"});saveSettings();render();toast(`Added ${n} to ${c.name}`);
     const again=document.querySelector(`[data-addact="${e.target.dataset.addact}"] input`);if(again)again.focus();return}
   if(e.target.id==="logform"){e.preventDefault();homeLog();return}
   if(e.target.id==="addcat"){e.preventDefault();const v=document.getElementById("newcat").value.trim();if(!v||cat(v))return;
