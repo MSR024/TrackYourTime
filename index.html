@@ -356,7 +356,7 @@ body.home .btn.primary{background:var(--theme-accent,var(--accent));border-color
 /* ---------- Defaults from your Excel worksheet (Week1) ---------- */
 const PALETTE=["#2a78d6","#eb6834","#1baf7a","#eda100","#e87ba4","#008300","#6250d6","#e34948"];
 const TYPES={productive:{label:"Productive",color:"var(--good)"},essential:{label:"Essential",color:"var(--warn)"},sleep:{label:"Sleep",color:"var(--sleep)"},waste:{label:"Wasted",color:"var(--bad)"}};
-const SETTINGS_V=4;
+const SETTINGS_V=5;
 const OLD_COLORS={"Sleep": "#5b6bb5", "Freshup": "#e0a100", "Exercise": "#2f9e6e", "Food": "#d9822b", "Office Travel": "#6b7280", "FTB Work": "#0f6b5c", "Family Time": "#c94f9b", "Organizing": "#3b82c4", "Home Chores": "#7c6f2e"};
 const NEW_COLORS={"FTB Work": "#2a78d6", "Family Time": "#eb6834", "Exercise": "#1baf7a", "Food": "#eda100", "Home Chores": "#e87ba4", "Organizing": "#008300", "Office Travel": "#6250d6", "Freshup": "#e34948", "Sleep": "#8a8f98"};
 /* Light-mode series hex -> its dark-mode step (same hue, stepped for the dark surface) */
@@ -364,28 +364,28 @@ const DARK_STEP={"#2a78d6":"#3987e5","#eb6834":"#d95926","#1baf7a":"#199e70","#e
 const DEFAULT_SETTINGS={
   v:SETTINGS_V,
   categories:[
-    {name:"Sleep",type:"sleep",color:"#8a8f98"},
-    {name:"Freshup",type:"essential",color:"#e34948"},
-    {name:"Exercise",type:"productive",color:"#1baf7a"},
-    {name:"Food",type:"essential",color:"#eda100"},
-    {name:"Office Travel",type:"essential",color:"#6250d6"},
-    {name:"FTB Work",type:"productive",color:"#2a78d6"},
-    {name:"Family Time",type:"productive",color:"#eb6834"},
-    {name:"Organizing",type:"productive",color:"#008300"},
-    {name:"Home Chores",type:"productive",color:"#e87ba4"}
+    {name:"Sleep",color:"#8a8f98"},
+    {name:"Freshup",color:"#e34948"},
+    {name:"Exercise",color:"#1baf7a"},
+    {name:"Food",color:"#eda100"},
+    {name:"Office Travel",color:"#6250d6"},
+    {name:"FTB Work",color:"#2a78d6"},
+    {name:"Family Time",color:"#eb6834"},
+    {name:"Organizing",color:"#008300"},
+    {name:"Home Chores",color:"#e87ba4"}
   ],
   activities:[
-    {name:"Sleep",cat:"Sleep"},
-    {name:"Freshup",cat:"Freshup"},
-    {name:"Walking",cat:"Exercise"},{name:"Running",cat:"Exercise"},{name:"Swimming",cat:"Exercise"},
-    {name:"Breakfast",cat:"Food"},{name:"Lunch",cat:"Food"},{name:"Dinner",cat:"Food"},{name:"Tea",cat:"Food"},{name:"Drinks",cat:"Food"},
-    {name:"To Office",cat:"Office Travel"},{name:"From Office",cat:"Office Travel"},
-    {name:"Follow up Meetings",cat:"FTB Work"},{name:"Learnings",cat:"FTB Work"},{name:"Project Calls",cat:"FTB Work"},
-    {name:"Deliverables",cat:"FTB Work"},{name:"Catchup",cat:"FTB Work"},{name:"Timewaster",cat:"FTB Work",type:"waste"},
-    {name:"Kids Activities",cat:"Family Time"},{name:"Time with Wife",cat:"Family Time"},{name:"Calls with Family",cat:"Family Time"},
-    {name:"Time Tracker",cat:"Organizing"},{name:"Task Planning",cat:"Organizing"},
-    {name:"Dishwasher Unload",cat:"Home Chores"},{name:"Clothes Washing",cat:"Home Chores"},{name:"Vacuuming",cat:"Home Chores"},
-    {name:"Cleaning",cat:"Home Chores"},{name:"Garage",cat:"Home Chores"},{name:"Backyard",cat:"Home Chores"},
+    {name:"Sleep",cat:"Sleep",type:"sleep"},
+    {name:"Freshup",cat:"Freshup",type:"essential"},
+    {name:"Walking",cat:"Exercise",type:"productive"},{name:"Running",cat:"Exercise",type:"productive"},{name:"Swimming",cat:"Exercise",type:"productive"},
+    {name:"Breakfast",cat:"Food",type:"essential"},{name:"Lunch",cat:"Food",type:"essential"},{name:"Dinner",cat:"Food",type:"essential"},{name:"Tea",cat:"Food",type:"essential"},{name:"Drinks",cat:"Food",type:"essential"},
+    {name:"To Office",cat:"Office Travel",type:"essential"},{name:"From Office",cat:"Office Travel",type:"essential"},
+    {name:"Follow up Meetings",cat:"FTB Work",type:"productive"},{name:"Learnings",cat:"FTB Work",type:"productive"},{name:"Project Calls",cat:"FTB Work",type:"productive"},
+    {name:"Deliverables",cat:"FTB Work",type:"productive"},{name:"Catchup",cat:"FTB Work",type:"productive"},{name:"Timewaster",cat:"FTB Work",type:"waste"},
+    {name:"Kids Activities",cat:"Family Time",type:"productive"},{name:"Time with Wife",cat:"Family Time",type:"productive"},{name:"Calls with Family",cat:"Family Time",type:"productive"},
+    {name:"Time Tracker",cat:"Organizing",type:"productive"},{name:"Task Planning",cat:"Organizing",type:"productive"},
+    {name:"Dishwasher Unload",cat:"Home Chores",type:"productive"},{name:"Clothes Washing",cat:"Home Chores",type:"productive"},{name:"Vacuuming",cat:"Home Chores",type:"productive"},
+    {name:"Cleaning",cat:"Home Chores",type:"productive"},{name:"Garage",cat:"Home Chores",type:"productive"},{name:"Backyard",cat:"Home Chores",type:"productive"}
   ]
 };
 const REMOVED_CATS=["Wakeup","Food Eating","Self Organizing","Home Organizing","Rest","Self Care","USA Groceries","USA Phone Calls","USA Travel","Time Waste"];
@@ -394,8 +394,11 @@ const REMOVED_ACTS=["Wakeup","Brushing","Shaving","Rest Room","Bags Unpack","App
 function migrate(st){
   if(st&&st.v===SETTINGS_V&&(st.categories||[]).length)return {settings:st,changed:false};
   // v3 -> v4: keep every rename and deletion, only move untouched default colors to the validated palette
-  if(st&&st.v===3&&(st.categories||[]).length){const out=JSON.parse(JSON.stringify(st));out.v=SETTINGS_V;
-    out.categories.forEach(c=>{if(OLD_COLORS[c.name]&&c.color===OLD_COLORS[c.name])c.color=NEW_COLORS[c.name]});return {settings:out,changed:true}}
+  if(st&&(st.v===3||st.v===4)&&(st.categories||[]).length){const out=JSON.parse(JSON.stringify(st));
+    if(out.v===3)out.categories.forEach(c=>{if(OLD_COLORS[c.name]&&c.color===OLD_COLORS[c.name])c.color=NEW_COLORS[c.name]});
+    // v5: how time counts lives on each activity only; an activity without its own setting takes its category's old one
+    out.activities.forEach(a=>{if(!a.type){const c=out.categories.find(x=>x.name===a.cat);a.type=(c&&c.type)||"essential"}});
+    out.categories.forEach(c=>{delete c.type});out.v=SETTINGS_V;return {settings:out,changed:true}}
   const out=JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
   if(st){
     (st.categories||[]).forEach(c=>{if(!REMOVED_CATS.includes(c.name)&&!out.categories.some(x=>x.name===c.name))out.categories.push(c)});
@@ -408,7 +411,7 @@ function migrate(st){
 const SLEEP_DEFAULT={on:true,from:92,to:16}; // 11:00 PM to 4:00 AM
 function sleepCfg(){return (S.settings&&S.settings.sleep)||SLEEP_DEFAULT}
 function inSleep(i){const c=sleepCfg();if(!c.on)return false;return c.from>c.to?(i>=c.from||i<c.to):(i>=c.from&&i<c.to)}
-function sleepEntry(){const sc=S.settings.categories.find(c=>c.type==="sleep")||{name:"Sleep"};const a=S.settings.activities.find(x=>x.cat===sc.name);return {c:sc.name,a:a?a.name:sc.name,auto:true}}
+function sleepEntry(){const a=S.settings.activities.find(x=>x.type==="sleep");return a?{c:a.cat,a:a.name,auto:true}:{c:"Sleep",a:"Sleep",auto:true}}
 function slotsOf(k){const real=day(k).slots;if(!sleepCfg().on)return real;const tk=todayKey();if(k>tk)return real;
   const ns=nowSlot(),out=Object.assign({},real);let e=null;
   for(let i=0;i<96;i++){if(!out[i]&&inSleep(i)&&(k<tk||i<=ns)){e=e||sleepEntry();out[i]=e}}return out}
@@ -456,8 +459,9 @@ function day(k){return S.days[k]||{slots:{}}}
 function cat(name){return S.settings.categories.find(c=>c.name===name)}
 function isDark(){const t=document.documentElement.dataset.theme;return t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches}
 function catColor(name){const c=(cat(name)?.color||"#8a8f98").toLowerCase();return isDark()&&DARK_STEP[c]?DARK_STEP[c]:c}
-function catType(name){return cat(name)?.type||"productive"}
-function typeOf(v){const x=S.settings.activities.find(y=>y.name===v.a&&y.cat===v.c);return (x&&x.type)||catType(v.c)}
+function catIsSleep(name){return S.settings.activities.some(a=>a.cat===name&&a.type==="sleep")}
+function catType(name){return catIsSleep(name)?"sleep":"productive"} // legacy; categories no longer carry a type
+function typeOf(v){const x=S.settings.activities.find(y=>y.name===v.a&&y.cat===v.c)||S.settings.activities.find(y=>y.name===v.a);return (x&&x.type)||"essential"}
 function actCat(a){return S.settings.activities.find(x=>x.name.toLowerCase()===a.toLowerCase())?.cat}
 
 /* ---------- Storage: your private claude.ai storage, with this device as backup ---------- */
@@ -662,11 +666,11 @@ function renderHome(){
 }
 /* Picking a logged window loads its category and activity so it can be changed */
 /* Default category for an empty window: what was logged just before it, but never Sleep outside the sleep window */
-function defaultCat(i){const real=day(S.date).slots;for(let j=i-1;j>=0;j--){const v=real[j];if(v&&cat(v.c)){if(catType(v.c)!=="sleep"||inSleep(i))return v.c;break}}
-  const st=S.settings;if(inSleep(i)){const sc=st.categories.find(c=>c.type==="sleep");if(sc)return sc.name}
-  return (st.categories.find(c=>c.type!=="sleep")||st.categories[0]).name}
+function defaultCat(i){const real=day(S.date).slots;for(let j=i-1;j>=0;j--){const v=real[j];if(v&&cat(v.c)){if(typeOf(v)!=="sleep"||inSleep(i))return v.c;break}}
+  const st=S.settings;if(inSleep(i)){const sa=st.activities.find(a=>a.type==="sleep");if(sa)return sa.cat}
+  return (st.categories.find(c=>!catIsSleep(c.name))||st.categories[0]).name}
 function prefillFromSlot(){const f=S.form,v=day(S.date).slots[f.from];
-  if(!v||v.auto){if(catType(f.cat)==="sleep"&&!inSleep(f.from)){f.cat=defaultCat(f.from);f.act=""}return}
+  if(!v||v.auto){if(catIsSleep(f.cat)&&!inSleep(f.from)){f.cat=defaultCat(f.from);f.act=""}return}
   f.newCat=false;f.newAct=false;f.newCatName="";f.newActName="";
   if(cat(v.c)){f.cat=v.c;f.act=S.settings.activities.some(a=>a.cat===v.c&&a.name===v.a)?v.a:""}}
 function nightCard(isToday){
@@ -687,8 +691,8 @@ function homeLog(){
     const ex=acts.find(x=>x.name.toLowerCase()===a.toLowerCase());if(ex)a=ex.name;}
   if(!c||!a)return;
   let changed=false;
-  if(!cat(c)){st.categories.push({name:c,type:"productive",color:PALETTE[st.categories.length%PALETTE.length]});changed=true}
-  if(!st.activities.some(x=>x.name===a&&x.cat===c)){st.activities.push({name:a,cat:c});changed=true}
+  if(!cat(c)){st.categories.push({name:c,color:PALETTE[st.categories.length%PALETTE.length]});changed=true}
+  if(!st.activities.some(x=>x.name===a&&x.cat===c)){st.activities.push({name:a,cat:c,type:"essential"});changed=true}
   if(changed)saveSettings();
   const d=S.days[S.date]||(S.days[S.date]={slots:{}});
   const wasLogged=!!d.slots[f.from];const loggedLast=f.to>=96;
@@ -937,16 +941,15 @@ function renderSettings(){
     h+=`<div class="card mg" style="--c:${c.color}">
       <div class="mghd"><input type="color" value="${c.color}" data-catcolor="${ix}" aria-label="Color for ${esc(c.name)}">
         <input class="nm cat" value="${esc(c.name)}" data-renamecat="${ix}" aria-label="Category name" autocomplete="off" enterkeyhint="done">
-        ${typeSel(`data-cattype="${ix}"`,c.type,false)}
         <button class="x" data-delcat="${ix}" aria-label="Delete category ${esc(c.name)}">🗑</button></div>`;
     if(S.confirmDel===c.name)h+=`<div class="confirm">Delete <b>${esc(c.name)}</b>${acts.length?` and its ${acts.length} activit${acts.length>1?"ies":"y"}`:""}? Entries you already logged stay in your history.<div class="row" style="margin-top:8px"><button class="btn" data-act="canceldel">Cancel</button><button class="btn danger" data-act="confirmdel" data-cat="${ix}">Delete</button></div></div>`;
     h+=`<div class="mgacts">${acts.map(({a,ai})=>`<div class="mgact"><input class="nm" value="${esc(a.name)}" data-renameact="${ai}" aria-label="Activity name" autocomplete="off" enterkeyhint="done">
-        ${typeSel(`data-acttype="${ai}"`,a.type||"",true)}
+        ${typeSel(`data-acttype="${ai}"`,a.type||"essential",false)}
         <button class="x" data-delact="${ai}" aria-label="Delete ${esc(a.name)}">×</button></div>`).join("")}
       <form class="mgadd" data-addact="${ix}"><input class="nm" placeholder="+ Add activity" aria-label="New activity in ${esc(c.name)}" autocomplete="off" enterkeyhint="done"><button class="btn" type="submit">Add</button></form></div></div>`;
   });
   h+=`<div class="card"><form class="row" id="addcat"><input class="txt" id="newcat" placeholder="New category name" autocomplete="off"><button class="btn primary" type="submit">Add category</button></form>
-    <div class="muted" style="font-size:12.5px;margin-top:8px">Renaming also updates entries you already logged. The dropdown next to each name sets how its time counts: Productive, Essential, Wasted or Sleep. "Default" means the activity counts the same way as its category.</div></div>`;
+    <div class="muted" style="font-size:12.5px;margin-top:8px">Renaming also updates entries you already logged. Each activity has its own setting for how its time counts: Productive, Essential, Wasted or Sleep. Categories are just groups.</div></div>`;
   const nDays=Object.keys(S.days).filter(k=>Object.keys(S.days[k].slots).length).length;
   h+=`<h2>Excel</h2><div class="card stack">
     <div class="muted" style="font-size:13px">Exports use the same columns as your worksheet: Day, Date, Start Time, End Time, Total Time, Activity, Category, plus the day block.</div>
@@ -993,7 +996,7 @@ function drawSheet(q){
   if(add)add.addEventListener("click",()=>{
     const name=q.trim();let c=sel.value;
     if(c==="__new"){c=document.getElementById("newcatname").value.trim();if(!c){document.getElementById("newcatname").focus();return}
-      if(!cat(c))st.categories.push({name:c,type:"productive",color:PALETTE[st.categories.length%PALETTE.length]})}
+      if(!cat(c))st.categories.push({name:c,color:PALETTE[st.categories.length%PALETTE.length]})}
     st.activities.push({name,cat:c});saveSettings();assign(name,c);
   });
 }
@@ -1096,7 +1099,7 @@ document.addEventListener("click",e=>{
     case "confirmdel":{const st=S.settings;if(st.categories.length<=1){toast("Keep at least one category.");break}const c=st.categories[+t.dataset.cat];st.activities=st.activities.filter(a=>a.cat!==c.name);st.categories.splice(+t.dataset.cat,1);S.confirmDel=null;if(S.form.cat===c.name)S.form.cat="";saveSettings();render();toast(`Deleted ${c.name}`);break}
     case "logit":homeLog();break;
     case "lognight":{const c=sleepCfg();const y=addDays(todayKey(),-1);if(c.from>c.to){S.date=y}else S.date=todayKey();S.form.date=S.date;S.form.from=c.from;S.form.newCat=false;S.form.newAct=false;
-      const sc=S.settings.categories.find(x=>x.type!=="sleep");if(sc&&catType(S.form.cat)==="sleep"){S.form.cat=sc.name;S.form.act=""}render();toast("Pick each window you were awake and log it");break}
+      const sc=S.settings.categories.find(x=>!catIsSleep(x.name));if(sc&&catIsSleep(S.form.cat)){S.form.cat=sc.name;S.form.act=""}render();toast("Pick each window you were awake and log it");break}
     case "hidenight":S.nightDismissed=todayKey();render();break;
     case "newcat":S.form.newCat=true;S.form.newAct=false;render();document.getElementById("f-newcat")?.focus();break;
     case "cancelnewcat":S.form.newCat=false;S.form.newCatName="";render();break;
@@ -1129,7 +1132,7 @@ document.addEventListener("change",e=>{
   else if(t.dataset.catgroup!==undefined){S.settings.categories[+t.dataset.catgroup].group=t.value.trim();saveSettings();render()}
   else if(t.dataset.renamecat!==undefined){renameCat(+t.dataset.renamecat,t.value)}
   else if(t.dataset.renameact!==undefined){renameAct(+t.dataset.renameact,t.value)}
-  else if(t.dataset.acttype!==undefined){const a=S.settings.activities[+t.dataset.acttype];if(t.value)a.type=t.value;else delete a.type;saveSettings()}
+  else if(t.dataset.acttype!==undefined){S.settings.activities[+t.dataset.acttype].type=t.value;saveSettings()}
   else if(t.dataset.actcat!==undefined){S.settings.activities[+t.dataset.actcat].cat=t.value;saveSettings();render()}
   else if(t.id==="imp"&&t.files[0]){importFile(t.files[0]);t.value=""}
 });
@@ -1138,11 +1141,11 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.classList&&
 document.addEventListener("submit",e=>{
   if(e.target.dataset&&e.target.dataset.addact!==undefined){e.preventDefault();const c=S.settings.categories[+e.target.dataset.addact];const inp=e.target.querySelector("input");const n=inp.value.trim();if(!n)return;
     if(S.settings.activities.some(a=>a.cat===c.name&&a.name.toLowerCase()===n.toLowerCase())){toast(`${c.name} already has ${n}.`);return}
-    S.settings.activities.push({name:n,cat:c.name});saveSettings();render();toast(`Added ${n} to ${c.name}`);
+    S.settings.activities.push({name:n,cat:c.name,type:"essential"});saveSettings();render();toast(`Added ${n} to ${c.name}. It counts as Essential; change it with the dropdown next to it.`);
     const again=document.querySelector(`[data-addact="${e.target.dataset.addact}"] input`);if(again)again.focus();return}
   if(e.target.id==="logform"){e.preventDefault();homeLog();return}
   if(e.target.id==="addcat"){e.preventDefault();const v=document.getElementById("newcat").value.trim();if(!v||cat(v))return;
-    S.settings.categories.push({name:v,type:"productive",color:PALETTE[S.settings.categories.length%PALETTE.length]});saveSettings();render()}
+    S.settings.categories.push({name:v,color:PALETTE[S.settings.categories.length%PALETTE.length]});saveSettings();render()}
 });
 // keep "now" fresh while the app is open
 let lastNow=nowSlot();
