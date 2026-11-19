@@ -174,7 +174,9 @@ select,.txt{padding:10px;border-radius:10px;border:1px solid var(--line);backgro
 .tc .track{height:8px;border-radius:4px;background:var(--bg);margin:4px 0 6px;overflow:hidden}
 .tc .track.thin{height:5px;opacity:.75}
 .tc .fill{height:100%;border-radius:0 4px 4px 0;background:var(--c)}
-.tacts{padding-left:16px;border-left:2px solid color-mix(in srgb,var(--c) 35%,transparent);margin-left:4px}
+.expbtn{width:24px;height:24px;flex:none;border-radius:7px;border:1px solid var(--line);background:var(--bg);font-size:16px;line-height:1;font-weight:600;color:var(--ink);display:grid;place-items:center;padding:0}
+.trow.cat{cursor:pointer;user-select:none}
+.tacts{margin-top:6px;padding-left:16px;border-left:2px solid color-mix(in srgb,var(--c) 35%,transparent);margin-left:4px}
 .blk{display:flex;flex-direction:column;gap:5px;padding:10px 0;border-top:1px solid var(--line)}
 .blk:first-child{border-top:0;padding-top:0}
 .seg{display:flex;height:12px;gap:2px}
@@ -837,22 +839,22 @@ function renderDay(){
   const k=S.date,a=agg(k),isToday=k===todayKey(),span=isToday?nowSlot()+1:96,open=Math.max(0,span-a.total);
   const cats=Object.entries(a.by).sort((x,y)=>y[1].n-x[1].n);const max=cats[0]?.[1].n||1;
   let h=noteHTML();
-  // Admin Day view: productive activities, then time per category, then the five block indicators
+  // Day view: productive activities, then time per category
   {const prod={};Object.values(a.s).forEach(v=>{if(typeOf(v)!=="productive")return;const key=v.c+"\u0001"+v.a;prod[key]=(prod[key]||0)+1});
    const rows=Object.entries(prod).sort((x,y)=>y[1]-x[1]);const tot=rows.reduce((t,r)=>t+r[1],0);const pmax=rows[0]?.[1]||1;
    h+=`<div class="row" style="justify-content:space-between;margin-top:4px"><h2 style="margin:0">Productive activities</h2><span class="mono" style="font-weight:700;color:var(--good)">${hrs(tot)}</span></div>
      <div class="card prodcard" style="margin-top:8px">${rows.length?rows.map(([key,n])=>{const [c,an]=key.split("\u0001");
        return `<div class="prow" style="--c:${catColor(c)}"><div class="trow"><span class="tn"><span class="dot"></span><b>${esc(an)}</b><span class="muted pc">${esc(c)}</span></span><span class="tv mono">${hrs(n)}</span></div><div class="track"><div class="fill" style="width:${n/pmax*100}%"></div></div></div>`}).join("")
        :`<div class="muted">No productive time logged ${k===todayKey()?"yet today":"on this day"}.</div>`}
-     <div class="muted pnote">Activities that count as Productive. Change what counts in Lists, using the dropdown next to each category or activity.</div></div>`;}
-  h+=`<div class="row" style="justify-content:space-between;margin-top:18px"><h2 style="margin:0">Time by category</h2><button class="btn" data-tab-go="edit" style="padding:6px 12px;font-size:13px">Edit entries</button></div><div class="card" style="margin-top:8px">`;
+     <div class="muted pnote">Activities that count as Productive. Change what counts in Lists, using the dropdown next to each activity.</div></div>`;}
+  h+=`<div class="row" style="justify-content:space-between;margin-top:18px"><h2 style="margin:0">Time by category</h2><span class="muted" style="font-size:12px">Tap + to see activities</span></div><div class="card" style="margin-top:8px">`;
   if(!cats.length)h+=`<div class="muted">Nothing logged on this day yet.</div>`;
   else h+=`<div class="tree">${cats.map(([c,d])=>{const acts=Object.entries(d.acts).sort((x,y)=>y[1]-x[1]);
-      return `<div class="tc" style="--c:${catColor(c)}"><div class="trow cat"><span class="tn"><span class="dot"></span>${esc(c)}</span><span class="tv mono">${hrs(d.n)}<small>${pct(d.n,a.total)}%</small></span></div>
+      const open=S.dayOpen&&S.dayOpen.has(c);
+      return `<div class="tc" style="--c:${catColor(c)}"><div class="trow cat" data-daycat="${esc(c)}"><span class="tn"><button class="expbtn" data-dayexp="${esc(c)}" aria-expanded="${open}" aria-label="${open?"Hide":"Show"} activities in ${esc(c)}">${open?"−":"+"}</button><span class="dot"></span>${esc(c)}</span><span class="tv mono">${hrs(d.n)}<small>${pct(d.n,a.total)}%</small></span></div>
         <div class="track"><div class="fill" style="width:${d.n/max*100}%"></div></div>
-        <div class="tacts">${acts.map(([an,n])=>`<div class="trow"><span class="tn">${esc(an)}</span><span class="tv mono">${hrs(n)}</span></div><div class="track thin"><div class="fill" style="width:${n/max*100}%"></div></div>`).join("")}</div></div>`}).join("")}</div>`;
+        <div class="tacts" ${open?"":"hidden"}>${acts.map(([an,n])=>`<div class="trow"><span class="tn">${esc(an)}</span><span class="tv mono">${hrs(n)}</span></div><div class="track thin"><div class="fill" style="width:${n/max*100}%"></div></div>`).join("")}</div></div>`}).join("")}</div>`;
   h+=`</div>`;
-  h+=`<h2>Time blocks</h2><div class="card"><div class="ind-wrap" style="margin-top:0">${blockIndicators(a.s,k)}</div></div>`;
   main.innerHTML=h;
 }
 
@@ -1074,6 +1076,8 @@ document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{S.tab=b.d
 document.addEventListener("click",e=>{
   const od2=e.target.closest("[data-orphdel]");
   if(od2){const o=orphans()[+od2.dataset.orphdel];if(o){fixOrphan(o.c,o.a,null);render();toast(`Removed ${hrs(o.n)} of ${o.c} › ${o.a}`)}return}
+  const dx=e.target.closest("[data-dayexp]");
+  if(dx){S.dayOpen=S.dayOpen||new Set();const c=dx.dataset.dayexp;S.dayOpen.has(c)?S.dayOpen.delete(c):S.dayOpen.add(c);render();return}
   const tc=e.target.closest("[data-togglecat]");
   if(tc){S.openCats=S.openCats||new Set();const c=tc.dataset.togglecat;S.openCats.has(c)?S.openCats.delete(c):S.openCats.add(c);render();return}
   const od=e.target.closest("[data-openday]");
@@ -1117,6 +1121,8 @@ document.addEventListener("click",e=>{
     case "exportall":exportXlsx(Object.keys(S.days).filter(k=>Object.keys(S.days[k].slots).length),`TimeTracker_all_${todayKey()}.xlsx`);break;
   }
 });
+document.addEventListener("dblclick",e=>{const r=e.target.closest("[data-daycat]");if(!r||e.target.closest("[data-dayexp]"))return;
+  S.dayOpen=S.dayOpen||new Set();const c=r.dataset.daycat;S.dayOpen.has(c)?S.dayOpen.delete(c):S.dayOpen.add(c);render()});
 document.addEventListener("change",e=>{
   const t=e.target;
   if(t.id==="sleep-on"||t.id==="sleep-from"||t.id==="sleep-to"){const c=Object.assign({},sleepCfg());
