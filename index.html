@@ -157,6 +157,13 @@ select,.txt{padding:10px;border-radius:10px;border:1px solid var(--line);backgro
 .ind .lv{font-size:10.5px;font-weight:600;color:var(--muted);margin-top:2px}
 .ind.good .lv{color:var(--good)}.ind.mid .lv{color:var(--warn)}.ind.low .lv{color:var(--bad)}
 .indnote{font-size:11.5px;margin-top:8px}
+.prodcard{display:flex;flex-direction:column;gap:10px}
+.prow .trow{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.prow .tn{display:flex;align-items:center;gap:7px;min-width:0}
+.prow .pc{font-size:12px}
+.prow .track{height:7px;border-radius:4px;background:var(--bg);margin-top:4px;overflow:hidden}
+.prow .fill{height:100%;border-radius:0 4px 4px 0;background:var(--c)}
+.pnote{font-size:11.5px}
 .tiles3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .tiles3 .v{font-size:18px}
 .tree{display:flex;flex-direction:column;gap:14px}
@@ -826,25 +833,22 @@ function renderDay(){
   const k=S.date,a=agg(k),isToday=k===todayKey(),span=isToday?nowSlot()+1:96,open=Math.max(0,span-a.total);
   const cats=Object.entries(a.by).sort((x,y)=>y[1].n-x[1].n);const max=cats[0]?.[1].n||1;
   let h=noteHTML();
-  h+=`<div class="card"><div class="tiles3">
-      <div class="tile"><div class="k">Logged</div><div class="v">${hrs(a.total)}</div></div>
-      <div class="tile"><div class="k">${isToday?"Not logged so far":"Not logged"}</div><div class="v" style="${open?"color:var(--warn)":""}">${hrs(open)}</div></div>
-      <div class="tile"><div class="k">Categories</div><div class="v">${cats.length}</div></div></div>
-    <div class="ind-wrap">${blockIndicators(a.s,k)}</div>
-    <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn" data-tab-go="edit" style="padding:7px 12px;font-size:13px">Edit entries</button></div></div>`;
-  h+=`<h2>Time by category</h2><div class="card">`;
+  // Admin Day view: productive activities, then time per category, then the five block indicators
+  {const prod={};Object.values(a.s).forEach(v=>{if(typeOf(v)!=="productive")return;const key=v.c+"\u0001"+v.a;prod[key]=(prod[key]||0)+1});
+   const rows=Object.entries(prod).sort((x,y)=>y[1]-x[1]);const tot=rows.reduce((t,r)=>t+r[1],0);const pmax=rows[0]?.[1]||1;
+   h+=`<div class="row" style="justify-content:space-between;margin-top:4px"><h2 style="margin:0">Productive activities</h2><span class="mono" style="font-weight:700;color:var(--good)">${hrs(tot)}</span></div>
+     <div class="card prodcard" style="margin-top:8px">${rows.length?rows.map(([key,n])=>{const [c,an]=key.split("\u0001");
+       return `<div class="prow" style="--c:${catColor(c)}"><div class="trow"><span class="tn"><span class="dot"></span><b>${esc(an)}</b><span class="muted pc">${esc(c)}</span></span><span class="tv mono">${hrs(n)}</span></div><div class="track"><div class="fill" style="width:${n/pmax*100}%"></div></div></div>`}).join("")
+       :`<div class="muted">No productive time logged ${k===todayKey()?"yet today":"on this day"}.</div>`}
+     <div class="muted pnote">Activities that count as Productive. Change what counts in Lists, using the dropdown next to each category or activity.</div></div>`;}
+  h+=`<div class="row" style="justify-content:space-between;margin-top:18px"><h2 style="margin:0">Time by category</h2><button class="btn" data-tab-go="edit" style="padding:6px 12px;font-size:13px">Edit entries</button></div><div class="card" style="margin-top:8px">`;
   if(!cats.length)h+=`<div class="muted">Nothing logged on this day yet.</div>`;
   else h+=`<div class="tree">${cats.map(([c,d])=>{const acts=Object.entries(d.acts).sort((x,y)=>y[1]-x[1]);
       return `<div class="tc" style="--c:${catColor(c)}"><div class="trow cat"><span class="tn"><span class="dot"></span>${esc(c)}</span><span class="tv mono">${hrs(d.n)}<small>${pct(d.n,a.total)}%</small></span></div>
         <div class="track"><div class="fill" style="width:${d.n/max*100}%"></div></div>
         <div class="tacts">${acts.map(([an,n])=>`<div class="trow"><span class="tn">${esc(an)}</span><span class="tv mono">${hrs(n)}</span></div><div class="track thin"><div class="fill" style="width:${n/max*100}%"></div></div>`).join("")}</div></div>`}).join("")}</div>`;
   h+=`</div>`;
-  // blocks
-  h+=`<h2>By time block</h2><div class="card"><div class="list">${mergedBlocks().map(mb=>{const bc={};let n=0,size=0;mb.ranges.forEach(([f,t])=>{size+=t-f;for(let i=f;i<t;i++){const v=a.s[i];if(v){n++;bc[v.c]=(bc[v.c]||0)+1}}});const b={name:mb.name,from:mb.ranges.length>1?mb.ranges[1][0]:mb.ranges[0][0],to:mb.ranges[0][1],size};
-      const seg=catOrder(Object.keys(bc)).map(c=>`<i style="flex:${bc[c]};background:${catColor(c)}" title="${esc(c)} ${hrs(bc[c])}"></i>`).join("");
-      const top=Object.entries(bc).sort((x,y)=>y[1]-x[1]).slice(0,2).map(([c,m])=>`${esc(c)} ${hrs(m)}`).join(" · ");
-      return `<div class="blk"><div class="row" style="justify-content:space-between"><span><b>${b.name}</b> <span class="muted mono" style="font-size:12px">${fmt(b.from,true)}–${fmt(b.to,true)}</span></span><span class="mono muted" style="font-size:12.5px">${hrs(n)} / ${hrs(b.size)}</span></div>
-        <div class="seg">${seg}${b.size-n>0?`<i style="flex:${b.size-n}" class="empty"></i>`:""}</div><div class="muted" style="font-size:12.5px">${top||"Nothing logged"}</div></div>`}).join("")}</div></div>`;
+  h+=`<h2>Time blocks</h2><div class="card"><div class="ind-wrap" style="margin-top:0">${blockIndicators(a.s,k)}</div></div>`;
   main.innerHTML=h;
 }
 
